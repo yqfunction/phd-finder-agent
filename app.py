@@ -28,7 +28,7 @@ PROVIDERS = {
     },
     "Google Gemini (OpenAI Endpoint)": {
         "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/",
-        "models": ["gemini-1.5-flash", "gemini-1.5-pro"],
+        "models": ["gemini-1.5-flash-latest", "gemini-2.0-flash", "gemini-1.5-pro-latest"],
         "help": "Get key from aistudio.google.com (Key format: AIzaSy...)"
     },
     "Custom OpenAI-Compatible API": {
@@ -103,7 +103,8 @@ if st.button("Search PhD Programs", type="primary"):
             Search Results Context:
             {search_context}
 
-            Return a valid JSON object containing a key "programs" which is a list of objects with these exact keys:
+            IMPORTANT: You MUST respond ONLY with a raw valid JSON object. Do NOT wrap it in markdown code blocks like ```json.
+            JSON structure must contain a single key "programs" containing a list of objects with these exact keys:
             - "Program name"
             - "Affiliated university" (Set value to '{univ}')
             - "Program website link"
@@ -112,19 +113,33 @@ if st.button("Search PhD Programs", type="primary"):
             """
 
             try:
-                response = client.chat.completions.create(
-                    model=selected_model,
-                    messages=[{"role": "user", "content": prompt}],
-                    response_format={"type": "json_object"}
-                )
+                # Handle API request across different providers safely
+                kwargs = {
+                    "model": selected_model,
+                    "messages": [{"role": "user", "content": prompt}]
+                }
                 
-                content = response.choices[0].message.content
+                # Only pass response_format for native OpenAI or Groq
+                if "gemini" not in selected_model and provider_choice != "Google Gemini (OpenAI Endpoint)":
+                    kwargs["response_format"] = {"type": "json_object"}
+
+                response = client.chat.completions.create(**kwargs)
+                
+                content = response.choices[0].message.content.strip()
+                
+                # Clean markdown formatting if present (e.g., ```json ... ```)
+                if content.startswith("```"):
+                    content = content.split("```")[1]
+                    if content.startswith("json"):
+                        content = content[4:]
+                content = content.strip()
+
                 data = json.loads(content)
                 programs = data.get("programs", [])
                 all_results.extend(programs)
             except Exception as e:
                 st.error(f"Error processing data for {univ} with model {selected_model}: {e}")
-
+                
         # Step C: Display & Export Table
         if all_results:
             df = pd.DataFrame(all_results)
