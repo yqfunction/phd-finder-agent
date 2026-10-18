@@ -9,11 +9,11 @@ st.set_page_config(page_title="PhD Program Search Agent", layout="wide")
 st.title("🎓 Multi-Provider PhD Program Search Agent")
 st.write("Find relevant PhD programs across target universities using your preferred AI API provider.")
 
-# Provider Configurations
+# Provider Configurations with active, supported model IDs
 PROVIDERS = {
     "Groq (Free)": {
         "base_url": "https://api.groq.com/openai/v1",
-        "models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "openai/gpt-oss-120b"],
+        "models": ["openai/gpt-oss-120b", "openai/gpt-oss-20b", "llama3-70b-8192", "mixtral-8x7b-32768"],
         "help": "Get key from console.groq.com (Key format: gsk_...)"
     },
     "OpenAI": {
@@ -68,7 +68,7 @@ if st.button("Search PhD Programs", type="primary"):
     if not api_key:
         st.error(f"Please enter your API key for {provider_choice} in the sidebar.")
     else:
-        # Initialize dynamic client using the selected provider's base URL
+        # Initialize dynamic client using selected provider's base URL
         client = OpenAI(
             base_url=target_base_url,
             api_key=api_key
@@ -113,7 +113,7 @@ if st.button("Search PhD Programs", type="primary"):
             """
 
             try:
-                # Prepare model arguments
+                # Prepare request arguments
                 kwargs = {
                     "model": selected_model,
                     "messages": [{"role": "user", "content": prompt}]
@@ -127,7 +127,7 @@ if st.button("Search PhD Programs", type="primary"):
                 
                 content = response.choices[0].message.content.strip()
                 
-                # Clean markdown formatting if present
+                # Clean markdown code formatting if present
                 if content.startswith("```"):
                     content = content.split("```")[1]
                     if content.startswith("json"):
