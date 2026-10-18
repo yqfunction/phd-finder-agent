@@ -70,8 +70,8 @@ if st.button("Search PhD Programs", type="primary"):
     else:
         # Initialize dynamic client
         client = OpenAI(
-            api_key=api_key,
-            base_url=target_base_url
+            base_url="https://api.groq.com/openai/v1",
+            api_key=api_key # User inputs their free Groq key starting with 'gsk_'
         )
         
         universities = [u.strip() for u in univ_input.split(";") if u.strip()]
@@ -123,7 +123,11 @@ if st.button("Search PhD Programs", type="primary"):
                 if "gemini" not in selected_model and provider_choice != "Google Gemini (OpenAI Endpoint)":
                     kwargs["response_format"] = {"type": "json_object"}
 
-                response = client.chat.completions.create(**kwargs)
+                response = client.chat.completions.create(
+                    model="llama-3.3-70b-versatile", # Free Llama model hosted by Groq
+                    messages=[{"role": "user", "content": prompt}],
+                    response_format={"type": "json_object"}
+                )
                 
                 content = response.choices[0].message.content.strip()
                 
