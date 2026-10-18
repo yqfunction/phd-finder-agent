@@ -13,7 +13,7 @@ st.write("Find relevant PhD programs across target universities using your prefe
 PROVIDERS = {
     "Groq (Free)": {
         "base_url": "https://api.groq.com/openai/v1",
-        "models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "llama3-70b-8192", "mixtral-8x7b-32768"],
+        "models": ["llama-3.1-8b-instant", "llama-3.3-70b-versatile", "openai/gpt-oss-20b", "openai/gpt-oss-120b"],
         "help": "Get key from console.groq.com (Key format: gsk_...)"
     },
     "OpenAI": {
@@ -127,7 +127,7 @@ if st.button("Search PhD Programs", type="primary"):
                 
                 content = response.choices[0].message.content.strip()
                 
-                # Clean markdown formatting if present (e.g., ```json ... ```)
+                # Clean markdown formatting if present
                 if content.startswith("```"):
                     content = content.split("```")[1]
                     if content.startswith("json"):
@@ -137,4 +137,29 @@ if st.button("Search PhD Programs", type="primary"):
                 data = json.loads(content)
                 programs = data.get("programs", [])
                 all_results.extend(programs)
-            except Exception as e
+            except Exception as e:
+                st.error(f"Error processing data for {univ} with model {selected_model}: {e}")
+                
+        # Step C: Display & Export Table
+        if all_results:
+            df = pd.DataFrame(all_results)
+            
+            cols = ["Program name", "Affiliated university", "Program website link", "Program application deadline", "Program application requirements"]
+            for col in cols:
+                if col not in df.columns:
+                    df[col] = "See website / Rolling"
+            df = df[cols]
+
+            st.success("Search complete!")
+            st.subheader("Potential PhD Programs Found")
+            st.dataframe(df, use_container_width=True)
+            
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download CSV for Google Sheets",
+                data=csv,
+                file_name='phd_programs.csv',
+                mime='text/csv',
+            )
+        else:
+            st.warning("No matching programs found. Try broadening your field keywords.")
